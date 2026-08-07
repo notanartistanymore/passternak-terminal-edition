@@ -62,6 +62,34 @@ def check_master_password(master_password: bytes) -> bool:
         return False
 
 
+def change_master_password(master_password: bytes) -> bytes:
+    """"Изменяет мастер пароль для всех записей базы данных"""
+    new_master_password = input("Enter new master password: ").encode(encoding="utf-8")
+    check_new_master_password = input("Enter new master password one more time: ").encode(encoding="utf-8")
+    if new_master_password != check_new_master_password:
+        print("Passwords are different!")
+        return master_password
+
+    with sqlite3.connect(DATABASE) as db:
+        try:
+            with db:
+                cursor = db.cursor()
+                cursor.execute("SELECT * FROM keyholder")
+                rows = cursor.fetchall()
+
+                for row in rows:
+                    _, title, password, salt = row
+                    decrypted = decrypt_password(master_password=master_password, encrypted_password=password, salt=salt)
+                    encrypted = encrypt_password(master_password=new_master_password, password=decrypted, salt=salt)
+                    cursor.execute("UPDATE keyholder SET password = ? WHERE title = ?", (encrypted, title))
+
+                print("Master password successfully changed!")
+        except sqlite3.Error as e:
+            print(f"Error: {e}. Nothing changed.")
+
+    return new_master_password
+
+
 # --- Генератор паролей ---
 
 class Config:
@@ -283,7 +311,8 @@ def main():
 4. Settings
 5. Rename item in database
 6. Delete item in database
-7. Exit
+7. Change master password
+8. Exit
 ------------
         """)
 
@@ -313,6 +342,9 @@ def main():
             delete_item()
 
         elif select == "7":
+            master_password = change_master_password(master_password)
+
+        elif select == "8":
             select = "exit"
 
         else:
