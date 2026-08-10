@@ -2,11 +2,14 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from base64 import urlsafe_b64encode
+from base64 import b64encode
 from cryptography.fernet import Fernet, InvalidToken
 
 import os
 import sqlite3
+import json
 from secrets import choice, SystemRandom
+from datetime import datetime
 
 
 DATABASE = "database.db"
@@ -291,6 +294,47 @@ def authenticate() -> bytes | None:
     return None
 
 
+def export_database(master_password: bytes, file_name: str) -> None:
+    with sqlite3.connect(DATABASE) as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT title, password, salt FROM keyholder")
+        export_data = []
+        for row in cursor:
+            title, encrypted_password, salt = row
+            decrypted_password = decrypt_password(master_password, encrypted_password, salt)
+            export_data.append({
+                "title": title,
+                "password": decrypted_password
+            })
+
+        with open(f"{file_name}.json", "w", encoding="utf-8") as file:
+            json.dump(export_data, file, ensure_ascii=False, indent=4)
+            print("Database was successfully exported!")
+
+
+def backup_database() -> None:
+    source_dir = os.path.dirname(os.path.abspath(__file__))
+    backup_path = os.path.join(source_dir, "backup")
+    os.makedirs(backup_path, exist_ok=True)
+    created_at = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    file_path = os.path.join(backup_path, f"{created_at}.json")
+
+    with sqlite3.connect(DATABASE) as db:
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM keyholder")
+        backup_data = []
+        for row in cursor:
+            _, title, password, salt = row
+            backup_data.append({
+                "title": title,
+                "password": b64encode(password).decode("utf-8"),
+                "salt": b64encode(salt).decode("utf-8")
+            })
+
+        with open(file_path, "w") as file:
+                json.dump(backup_data, file, ensure_ascii=False, indent=4)
+
+
 def main():
     initialize_database(DATABASE)
 
@@ -312,7 +356,8 @@ def main():
 5. Rename item in database
 6. Delete item in database
 7. Change master password
-8. Exit
+8. Export database as a text
+9. Exit
 ------------
         """)
 
@@ -345,6 +390,11 @@ def main():
             master_password = change_master_password(master_password)
 
         elif select == "8":
+            file_name = input("Enter file name: ")
+            export_database(master_password, file_name)
+
+        elif select == "9":
+            backup_database()
             select = "exit"
 
         else:

@@ -134,6 +134,7 @@ celerybeat-schedule*
 celerybeat.pid
 
 # Database
+backup/
 *.db
 
 # Redis
