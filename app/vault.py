@@ -46,10 +46,9 @@ def change_master_password(master_password: bytes) -> bytes:
             with db:
                 cursor = db.cursor()
                 cursor.execute("SELECT * FROM keyholder")
-                rows = cursor.fetchall()
 
-                for row in rows:
-                    _, title, password, salt = row
+                for row in cursor:
+                    _, title, login, password, salt = row
                     decrypted = decrypt_password(master_password=master_password, encrypted_password=password, salt=salt)
                     encrypted = encrypt_password(master_password=new_master_password, password=decrypted, salt=salt)
                     cursor.execute("UPDATE keyholder SET password = ? WHERE title = ?", (encrypted, title))
@@ -83,7 +82,7 @@ def create_item(config: Config, master_password: bytes):
                 "INSERT INTO keyholder (title, login, password, salt) VALUES(?, ?, ?, ?)",
                 (title, login, encrypted_password, temp_salt),
             )
-            print(f"Login '{login}  -   Password '{temp_password}'\nfor '{title}' was created!")
+            print(f"Login: {login} | Password: {temp_password}\n'{title}' was created!")
         else:
             overwrite_choice = None
             while overwrite_choice not in ("yes", "no"):
@@ -108,15 +107,14 @@ def show_items(master_password: bytes):
 
     for _, title, login, encrypted_password, salt in data:
         decrypted = decrypt_password(master_password, encrypted_password, salt)
-        print(f"{title}:    {login}    -    {decrypted}")
+        print(f"{title}\n--- Login: {login}\n--- Password: {decrypted}")
 
 
 def rename_item():
     with sqlite3.connect(DATABASE) as db:
         cursor = db.cursor()
         cursor.execute("SELECT * FROM keyholder")
-        data = cursor.fetchall()
-        for item in data:
+        for item in cursor:
             print(f"Name: {item[1]}.")
 
         rename_choice = input("What do you want to rename: ").strip()
@@ -141,8 +139,7 @@ def delete_item() -> None:
     with sqlite3.connect(DATABASE) as db:
         cursor = db.cursor()
         cursor.execute("SELECT * FROM keyholder")
-        data = cursor.fetchall()
-        for item in data:
+        for item in cursor:
             print(f"Name: {item[1]}.")
 
         delete_choice = input("What do you want to delete: ").strip()

@@ -9,6 +9,16 @@ from crypto import decrypt_password
 
 
 def export_database(master_password: bytes, file_name: str) -> None:
+    folder_content = os.listdir()
+    for file in folder_content:
+        if file == f"{file_name}.json":
+            overwrite_choice = None
+            while overwrite_choice not in ("1", "2"):
+                overwrite_choice = input(f"File with name '{file_name}' already exist! Overwrite?\n[1] Yes\n[2] No\n").lower().strip()
+                if overwrite_choice == "2":
+                    print("Nothing changed!")
+                    return
+
     with sqlite3.connect(DATABASE) as db:
         cursor = db.cursor()
         cursor.execute("SELECT title, login, password, salt FROM keyholder")
@@ -30,6 +40,7 @@ def export_database(master_password: bytes, file_name: str) -> None:
 def backup_database() -> None:
     source_dir = os.path.dirname(os.path.abspath(__file__))
     backup_path = os.path.join(source_dir, "backup")
+
     os.makedirs(backup_path, exist_ok=True)
     created_at = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     file_path = os.path.join(backup_path, f"{created_at}.json")

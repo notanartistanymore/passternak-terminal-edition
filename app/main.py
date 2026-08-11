@@ -16,19 +16,22 @@ def main():
     config = Config(length=12, has_lowercase=True, has_uppercase=True, has_numbers=True, has_special=True)
 
     select = None
-    while select != "exit":
+    while select != "EXIT":
         select = input("""
---- Menu ---
-[1] Generate new password
-[2] Create new item in database
-[3] Show all items
-[4] Settings
-[5] Rename item in database
-[6] Delete item in database
-[7] Change master password
-[8] Export database as a text
-[9] Exit
-------------
++===================================+
+|               MENU                |                    
+|-----------------------------------+
+|   [1] GENERATE PASSWORD           |
+|   [2] SAVE PASSWORD               |
+|   [3] SHOW ALL PASSWORDS          |
+|   [4] SETTINGS                    |
+|   [5] RENAME ENTRY                |
+|   [6] DELETE ENTRY                |
+|   [7] CHANGE MASTER PASSWORD      |
+|   [8] EXPORT DATABASE             |
+|-----------------------------------|
+|   [0] EXIT                        |
++===================================+
         """)
 
         if select == "1":
@@ -60,12 +63,14 @@ def main():
             master_password = change_master_password(master_password)
 
         elif select == "8":
-            file_name = input("Enter file name: ")
+            file_name = None
+            while not file_name:
+                file_name = input("Enter file name: ").strip()
             export_database(master_password, file_name)
 
-        elif select == "9":
+        elif select == "0":
             backup_database()
-            select = "exit"
+            select = "EXIT"
 
         else:
             print("Error! Choose right menu item!")
